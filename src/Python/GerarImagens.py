@@ -1,9 +1,12 @@
 
 from PIL import Image
 import os
-import importlib.util
+import random
 from collections import defaultdict
 from dotenv import load_dotenv
+from DividirImagens import cortarImagens
+from ListaLocalizacoes import coordenadas_cerrado
+from datetime import datetime, timedelta
 from sentinelhub import (
     SHConfig,
     BBox,
@@ -13,17 +16,13 @@ from sentinelhub import (
     SentinelHubCatalog,
     MimeType
 )
-# --------------------------------
+
+
+
 # 1. Configurações
-# --------------------------------
 load_dotenv()
 
 #importar o módulo para dividir imagens
-spec = importlib.util.spec_from_file_location("cortar_imagens", "Dividir Imagens.py")
-modulo = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(modulo)
-
-cortador = modulo.Cortador()
 
 config = SHConfig()
 config.sh_client_id = os.getenv("COPERNICUS_CLIENT_ID")
@@ -36,38 +35,31 @@ config.sh_token_url = (
 
 inicioTempo = "2020-01-01"
 fimTempo = "2025-12-31"
-
-QUANTIDADE_IMAGENS = 4
+QUANTIDADE_IMAGENS = 1
 TAMANHO = (2500, 2500)
 
-latitude_min = -17.0
-latitude_max = -15.0
-longitude_min = -50.0
-longitude_max = -48.0
+latitude, longitude = random.choice(coordenadas_cerrado)
 
 bbox = BBox(
     bbox=(
-        longitude_min,
-        latitude_min,
-        longitude_max,
-        latitude_max
+        longitude - 2,
+        latitude - 2,
+        longitude,
+        latitude
     ),
     crs=CRS.WGS84
 )
 
 # Pasta das imagens originais
-PASTA_SAIDA = os.path.join(
-    os.getcwd(),
-    "../../Imagens",
-    "Originais"
-)
+PASTA_SAIDA = os.path.join(os.getcwd(), "../../Imagens", "Originais")
 os.makedirs(PASTA_SAIDA, exist_ok = True)
 
 print("Inicialização concluída.")
 
-# --------------------------------
+
+
+
 # 2. Busca datas disponíveis
-# --------------------------------
 
 def buscarDatas(bbox, quantidade):
     catalog = SentinelHubCatalog(config=config)
@@ -87,9 +79,7 @@ def buscarDatas(bbox, quantidade):
     nuvens_por_data = defaultdict(list)
 
     for item in resultados:
-
         propriedades = item.get("properties", {})
-
         dataHora = propriedades.get("datetime")
 
         if not dataHora:
@@ -97,23 +87,15 @@ def buscarDatas(bbox, quantidade):
 
         data = dataHora[:10]
 
-        nuvens = propriedades.get(
-            "eo:cloud_cover",
-            100
-        )
-
+        nuvens = propriedades.get("eo:cloud_cover", 100)
         nuvens_por_data[data].append(float(nuvens))
 
     # Calcula a média de cobertura de nuvens
     candidatas = []
-
     for data, valores in nuvens_por_data.items():
-
         media_nuvens = sum(valores) / len(valores)
+        candidatas.append((data, media_nuvens))
 
-        candidatas.append(
-            (data, media_nuvens)
-        )
 
     # Menor cobertura média primeiro
     candidatas.sort(key=lambda item: item[1])
@@ -121,36 +103,36 @@ def buscarDatas(bbox, quantidade):
     return candidatas[:quantidade]
 
 
-# --------------------------------
+
+
 # 3. Evalscript RGB
-# --------------------------------
 
 evalscript = """
 //VERSION=3
 
 function setup() {
     return {
-        input: ["B02", "B03", "B04"],
+        input: [{
+            bands: ["B02", "B03", "B04", "dataMask"]
+        }],
         output: {
-            bands: 3,
-            sampleType: "AUTO"
+            bands: 4,
+            sampleType: "UINT8"
         }
     };
 }
 
 function evaluatePixel(sample) {
     return [
-        2.5 * sample.B04,
-        2.5 * sample.B03,
-        2.5 * sample.B02
+        Math.min(255, sample.B04 * 2.5 * 255),
+        Math.min(255, sample.B03 * 2.5 * 255),
+        Math.min(255, sample.B02 * 2.5 * 255),
+        sample.dataMask * 255
     ];
 }
 """
 
-
-# --------------------------------
 # 4. Pesquisa as datas
-# --------------------------------
 
 datasSelecionadas = buscarDatas(
     bbox,
@@ -165,63 +147,45 @@ if not datasSelecionadas:
 print(f"Datas selecionadas: {len(datasSelecionadas)}")
 
 
-# --------------------------------
 # 5. Gera uma imagem por data
-# --------------------------------
 
-for contador, (dataImagem, nuvensMedia) in enumerate(
-    datasSelecionadas,
-    start=1
-):
-
-    caminho = os.path.join(
-        PASTA_SAIDA,
-        f"imagem_{dataImagem}.png"
-    )
+for contador, (dataImagem, nuvensMedia) in enumerate(datasSelecionadas, start = 1):
+    data_central = datetime.strptime(dataImagem, "%Y-%m-%d")
+    data_inicio = (data_central - timedelta(days=15)).strftime("%Y-%m-%d")
+    data_fim = (data_central + timedelta(days=15)).strftime("%Y-%m-%d")
+    caminho = os.path.join(PASTA_SAIDA, f"imagem_{dataImagem}.png")
 
     print()
     print("-----------------------------")
     print(f"Imagem: {contador}")
     print(f"Data: {dataImagem}")
     print(f"Cobertura média das cenas: {nuvensMedia:.2f}%")
+    print(f"Latitude e Longitude: {latitude}, {longitude}")
     print("-----------------------------")
 
     # Evita baixar novamente um arquivo já existente
     if os.path.exists(caminho):
-
         print(f"Arquivo já existe: {caminho}")
         continue
 
+
     # Monta a requisição para o dia escolhido
     request = SentinelHubRequest(
-
         evalscript=evalscript,
-
         input_data=[
             SentinelHubRequest.input_data(
-
                 data_collection=DataCollection.SENTINEL2_L2A.define_from(
                     "s2l2a",
                     service_url=config.sh_base_url
                 ),
-
                 time_interval=(
-                    dataImagem + "T00:00:00Z",
-                    dataImagem + "T23:59:59Z"
+                    data_inicio + "T00:00:00Z",
+                    data_fim + "T23:59:59Z"
                 ),
-
                 mosaicking_order="leastCC"
-
             )
         ],
-
-        responses=[
-            SentinelHubRequest.output_response(
-                "default",
-                MimeType.PNG
-            )
-        ],
-
+        responses=[SentinelHubRequest.output_response("default", MimeType.PNG)],
         bbox=bbox,
         size=TAMANHO,
         config=config
@@ -245,8 +209,7 @@ for contador, (dataImagem, nuvensMedia) in enumerate(
         print(f"Dimensões: {imagem.shape[1]} x {imagem.shape[0]} pixels")
 
         print("Cortando imagem...")
-
-        cortador.cortarImagens(caminho, contador)
+        cortarImagens(caminho, contador)
 
     except Exception as erro:
 
