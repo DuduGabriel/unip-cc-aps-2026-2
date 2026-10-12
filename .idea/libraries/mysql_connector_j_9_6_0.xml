@@ -1,8 +1,8 @@
 <component name="libraryTable">
   <library name="mysql-connector-j-9.6.0">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/dependencies/rs2xml.jar!/" />
       <root url="jar://$PROJECT_DIR$/dependencies/mysql-connector-j-9.6.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dependencies/rs2xml.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>

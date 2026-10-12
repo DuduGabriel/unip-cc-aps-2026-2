@@ -1,3 +1,4 @@
+package user_interface;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -13,40 +14,30 @@ public class tela {
     private JComboBox<String> cmbTipoPesquisa = new JComboBox<>();
     private JButton btnPesquisa = new JButton("Pesquisar");
 
-    public void organizaTabela(){
+    public void organizaTabela() {
         //CRIA A TABELA COM OS DADOS PADRÕES, DEFINE SEU TAMANHO E SEU TITULO
         tabela.setModel(sql.selectInicial());
-        tabela.getColumnModel().getColumn(0).setPreferredWidth(20);
-        tabela.getColumnModel().getColumn(0).setHeaderValue("ID");
 
-        tabela.getColumnModel().getColumn(1).setPreferredWidth(30);
-        tabela.getColumnModel().getColumn(1).setHeaderValue("Nome");
+        tabela.setRowHeight(85);
+        tabela.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        tabela.getTableHeader().setPreferredSize(new Dimension(0, 30));
+        tabela.getTableHeader().setReorderingAllowed(false);
 
-        tabela.getColumnModel().getColumn(2).setPreferredWidth(30);
-        tabela.getColumnModel().getColumn(2).setHeaderValue("Latitude");
+        int[] larguras = {120, 50, 100, 100, 130, 250, 130};
 
-        tabela.getColumnModel().getColumn(3).setPreferredWidth(30);
-        tabela.getColumnModel().getColumn(3).setHeaderValue("Longitude");
-
-        tabela.getColumnModel().getColumn(4).setPreferredWidth(40);
-        tabela.getColumnModel().getColumn(4).setHeaderValue("Data da Imagem");
-
-        tabela.getColumnModel().getColumn(5).setPreferredWidth(20);
-        tabela.getColumnModel().getColumn(5).setHeaderValue("Nuvens");
-
-        tabela.getColumnModel().getColumn(6).setPreferredWidth(50);
-        tabela.getColumnModel().getColumn(6).setHeaderValue("Imagem");
+        for (int i = 0; i < larguras.length; i++)
+            tabela.getColumnModel().getColumn(i).setPreferredWidth(larguras[i]);
     }
+
+
     public JComboBox<String> carregaCmbBox(JComboBox<String> var){
         //COLOCA OS ITENS DENTRO DO JCOMBOBOX
-        var.addItem("Nome");
-        var.addItem("Nuvens");
+        var.addItem("ID");
         var.addItem("Latitude");
         var.addItem("Longitude");
-        var.addItem("Data");
-        var.addItem("Hora");
-        var.addItem("Tamanho Imagem");
         var.addItem("Tamanho Arquivo");
+        var.addItem("Nome arquivo");
+        var.addItem("Data");
 
         return var;
     }
@@ -58,11 +49,10 @@ public class tela {
         frame.setMinimumSize(new Dimension(600, 600));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocationRelativeTo(null);
-        frame.add(scrollTabela);
 
         //CRIA OS PAINEIS
         JPanel panelCima = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JPanel panelCentro = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel panelCentro = new JPanel(new BorderLayout());
         JPanel panelBaixo = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         frame.add(panelCima, BorderLayout.NORTH);
         frame.add(panelCentro,BorderLayout.CENTER);
@@ -72,7 +62,7 @@ public class tela {
         panelCima.add(txtBusca);
         panelCima.add(cmbTipoPesquisa);
         panelCima.add(btnPesquisa);
-        panelCentro.add(tabela);
+        panelCentro.add(scrollTabela, BorderLayout.CENTER);
         panelBaixo.add(btnSair);
 
         cmbTipoPesquisa = carregaCmbBox(cmbTipoPesquisa);

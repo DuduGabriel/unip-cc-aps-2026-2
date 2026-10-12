@@ -10,9 +10,6 @@ def conectar():
 
 
 def salvarBanco(dados):
-    conexao = conectar()
-    cursor = conexao.cursor()
-
     print("SALVANDO NO BANCO")
 
     DATA_CAPTURA = dados[0]
@@ -22,6 +19,11 @@ def salvarBanco(dados):
     ARQUIVO_SAIDA = dados[4]
     TAMNHO_ARQUIVO = dados[5]
 
+    with open(ARQUIVO_SAIDA, "rb") as arquivo:
+        IMAGEM_BYTES = arquivo.read()
+
+    TAMANHO_ARQUIVO = len(IMAGEM_BYTES)
+
     SQL_LINE = '''
           INSERT INTO imagens(nome_arquivo, latitude, longitude, data_captura, tamanho_arquivo, imagem) VALUES (%s, %s, %s, %s, %s, %s)
     '''
@@ -30,15 +32,19 @@ def salvarBanco(dados):
         LATITUDE,
         LONGITUDE,
         DATA_CAPTURA,
-        TAMNHO_ARQUIVO,
-        ARQUIVO_SAIDA
+        TAMANHO_ARQUIVO,
+        IMAGEM_BYTES
     )
 
+    conexao = conectar()
 
-    cursor.execute(SQL_LINE, VALUES)
-
-    conexao.commit()
-    cursor.close()
-    conexao.close()
-
-    print("SALVO NO BANCO DE DADOS")
+    try:
+        cursor = conexao.cursor()
+        try:
+            cursor.execute(SQL_LINE, VALUES)
+            conexao.commit()
+            print("SALVO NO BANCO DE DADOS")
+        finally:
+            cursor.close()
+    finally:
+        conexao.close()

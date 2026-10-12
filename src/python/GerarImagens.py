@@ -35,7 +35,7 @@ config.sh_token_url = (
 
 INICIO_TEMPO = "2020-01-01"
 FIM_TEMPO = "2025-12-31"
-QUANTIDADE_IMAGENS = 1
+QUANTIDADE_IMAGENS = 3
 TAMANHO = (2500, 2500)
 
 latitude, longitude = random.choice(coordenadas_cerrado)
