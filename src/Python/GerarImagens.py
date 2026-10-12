@@ -33,8 +33,8 @@ config.sh_token_url = (
     "auth/realms/CDSE/protocol/openid-connect/token"
 )
 
-inicioTempo = "2020-01-01"
-fimTempo = "2025-12-31"
+INICIO_TEMPO = "2020-01-01"
+FIM_TEMPO = "2025-12-31"
 QUANTIDADE_IMAGENS = 1
 TAMANHO = (2500, 2500)
 
@@ -68,7 +68,7 @@ def buscarDatas(bbox, quantidade):
         catalog.search(
             DataCollection.SENTINEL2_L2A,
             bbox = bbox,
-            time = (inicioTempo, fimTempo)
+            time = (INICIO_TEMPO, FIM_TEMPO)
         )
     )
 
@@ -99,6 +99,8 @@ def buscarDatas(bbox, quantidade):
 
     # Menor cobertura média primeiro
     candidatas.sort(key=lambda item: item[1])
+
+    print("Imagem encontrada.")
 
     return candidatas[:quantidade]
 
@@ -155,7 +157,8 @@ for contador, (dataImagem, nuvensMedia) in enumerate(datasSelecionadas, start = 
     data_fim = (data_central + timedelta(days=15)).strftime("%Y-%m-%d")
     caminho = os.path.join(PASTA_SAIDA, f"imagem_{dataImagem}.png")
 
-    print()
+    dadosImagem = [dataImagem, latitude, longitude, f"imagem_{dataImagem}.png"]
+
     print("-----------------------------")
     print(f"Imagem: {contador}")
     print(f"Data: {dataImagem}")
@@ -209,7 +212,7 @@ for contador, (dataImagem, nuvensMedia) in enumerate(datasSelecionadas, start = 
         print(f"Dimensões: {imagem.shape[1]} x {imagem.shape[0]} pixels")
 
         print("Cortando imagem...")
-        cortarImagens(caminho, contador)
+        cortarImagens(caminho, contador, dadosImagem)
 
     except Exception as erro:
 

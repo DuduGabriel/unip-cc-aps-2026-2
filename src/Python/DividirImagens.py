@@ -1,10 +1,11 @@
 from PIL import Image
 import os
+from MySQL import salvarBanco
 
 linhas = 3
 colunas = 3
 
-def cortarImagens(caminho_imagem, imagemAtual):
+def cortarImagens(caminho_imagem, imagemAtual, dados_Arquivo):
     arquivo = os.path.join(os.getcwd(), caminho_imagem)
     caminho_saida = os.path.join(os.getcwd(), "../../Imagens", "Recortes")
 
@@ -24,3 +25,8 @@ def cortarImagens(caminho_imagem, imagemAtual):
             arquivo_saida = os.path.join(caminho_saida, f"imagem X{imagemAtual}_{row + 1}_{col + 1}.png")
 
             novaImagem.save(arquivo_saida)
+
+            dados_Arquivo.append(arquivo_saida)
+            dados_Arquivo.append(os.path.getsize(arquivo_saida))
+
+            salvarBanco(dados_Arquivo)

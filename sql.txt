@@ -2,8 +2,9 @@ CREATE TABLE imagens(
     id INT NOT NULL AUTO_INCREMENT,
     PRIMARY KEY (id),
     imagem MEDIUMBLOB,
-    latitude DECIMAL(10,3),
-    longitude DECIMAL(10,3),
+    latitude DECIMAL(10,7),
+    longitude DECIMAL(10,7),
+    data_captura DATE,
     tamanho_arquivo FLOAT,
-    tamanho_imagem varchar(20),
-    nuvens varchar(5))
+    nome_arquivo varchar(20)
+)
